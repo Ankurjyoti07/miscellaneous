@@ -1,10 +1,9 @@
 import numpy as np
 import matplotlib.pyplot as plt
-import matplotlib.dates as mdates
 import mplcursors
 import glob
 from astropy.io import fits
-from datetime import datetime
+from astropy.time import Time
 import math
 
 def read_linelist(filename):

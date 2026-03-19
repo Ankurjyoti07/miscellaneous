@@ -52,8 +52,8 @@ def compute_mean_flux_for_lines(spectra_files, line_centers, line_widths):
 
     mean_flux_for_lines = []
     for i, center in enumerate(line_centers):
-        lower_bound = center - line_widths[i] / 2
-        upper_bound = center + line_widths[i] / 2
+        lower_bound = center - line_widths[i]
+        upper_bound = center + line_widths[i]
         mask = (wavelengths >= lower_bound) & (wavelengths <= upper_bound)
         mean_flux_for_lines.append(mean_flux[mask])
     
@@ -78,7 +78,7 @@ def read_spectrum(infile):
     return wave, flux
 
 
-def rv_determination(w, f1, f2, velocity, method = 'gaussian', plot = False, ycutoff=-99999):    
+def rv_determination(w, f1, f2, velocity, center, infile, method = 'gaussian', plot = False, ycutoff=-99999, output_dir='ccf_plots'):     
     ccf = np.array(calc_ccf_template(w, f1, f2, velocity))
     inds = (ccf >= ycutoff)
     if method == 'gaussian':
@@ -87,19 +87,6 @@ def rv_determination(w, f1, f2, velocity, method = 'gaussian', plot = False, ycu
         popt, pcov = so.curve_fit(double_gaussian, velocity[inds], ccf[inds], p0=[velocity[np.argmax(ccf)], np.max(ccf)-np.min(ccf), 20, 1 - velocity[np.argmax(ccf)], (np.max(ccf)-np.min(ccf))/2, 20, np.min(ccf)], bounds=([-np.inf, 0, 10, -np.inf, 0, 10, -np.inf], np.inf))
     elif method == 'quadratic':
         popt, pcov = so.curve_fit(quadratic, velocity[inds], ccf[inds])
-
-
-    if plot:
-        plt.plot(velocity, ccf)
-        if method == 'gaussian':
-            plt.plot(velocity[inds], gaussian(velocity[inds], *popt))
-        elif method == 'double_gaussian':
-            plt.plot(velocity[inds], double_gaussian(velocity[inds], *popt))
-        elif method == 'quadratic':
-            plt.plot(velocity[inds], quadratic(velocity[inds], *popt))
-        plt.axvline(popt[0])
-        plt.xlabel('Velocity (km/s)')
-        plt.show()
     
     rv = popt[0]
     if method == 'gaussian':
@@ -113,7 +100,33 @@ def rv_determination(w, f1, f2, velocity, method = 'gaussian', plot = False, ycu
         rv_error = [rv1_error, rv2_error]
     elif method == 'quadratic':
         rv_error = np.sqrt(np.diag(pcov))[0]
-    
+
+    if plot:
+        base_filename = os.path.splitext(os.path.basename(infile))[0]
+        plot_filename = f"{base_filename}_{center:.2f}_ccf.png" #centre is set outside function in ccf loop
+        plot_path = os.path.join(output_dir, plot_filename)
+        os.makedirs(output_dir, exist_ok=True)  # ensure directory exists
+
+        plt.figure()
+        plt.plot(velocity, ccf, label='CCF')
+        if method == 'gaussian':
+            plt.plot(velocity[inds], gaussian(velocity[inds], *popt), label='Gaussian Fit')
+        elif method == 'double_gaussian':
+            plt.plot(velocity[inds], double_gaussian(velocity[inds], *popt), label='Double Gaussian Fit')
+        elif method == 'quadratic':
+            plt.plot(velocity[inds], quadratic(velocity[inds], *popt), label='Quadratic Fit')
+        
+        plt.axvline(popt[0], color='r', linestyle='--', label=f'RV: {popt[0]:.2f} km/s')
+        plt.xlabel('Velocity (km/s)')
+        plt.ylabel('CCF')
+        plt.title(f'Line Center: {center} Å') #centre is set outside function in ccf loop
+        plt.text(0.1, 0.9, f'RV Error: {np.sqrt(np.diag(pcov))[0]:.2f} km/s', transform=plt.gca().transAxes)
+        plt.legend()
+
+        # Save the plot
+        plt.savefig(plot_path)
+        plt.close()
+
     return rv, rv_error
 
 def process_time_series(spectra_files, line_list_file, velocity, output_csv='rv_results.csv', log_file='error_log.txt'):
@@ -140,7 +153,7 @@ def process_time_series(spectra_files, line_list_file, velocity, output_csv='rv_
 
             rv_values, rv_errors = [], []
             for i, center in enumerate(line_centers):
-                mask = (wavelength > (center - line_widths[i]/2)) & (wavelength < (center + line_widths[i]/2))
+                mask = (wavelength > (center - line_widths[i])) & (wavelength < (center + line_widths[i]))  ## changes
                 flux_line = flux[mask]
                 wavelength_line = wavelength[mask]
                 if len(flux_line) == 0:
@@ -150,7 +163,7 @@ def process_time_series(spectra_files, line_list_file, velocity, output_csv='rv_
 
                 ccf = calc_ccf_template(wavelength_line, mean_flux[i], flux_line, velocity)
                 try:
-                    rv, rv_error = rv_determination(wavelength_line, mean_flux[i], flux_line, velocity)
+                    rv, rv_error = rv_determination(wavelength_line, mean_flux[i], flux_line, velocity, center, infile, plot=True, output_dir='../ccf_plots') # saves ccf plots/ harcoded for working with ccf loop
                     rv_values.append(rv)
                     rv_errors.append(rv_error)
                 except RuntimeError:
@@ -171,7 +184,7 @@ def process_time_series(spectra_files, line_list_file, velocity, output_csv='rv_
     print(f"RV results saved to {output_csv}")
 
 
-spectra_files = glob.glob('../manual_normalization/norm/*.fits')
-line_list_file = 'linelist.txt'
+spectra_files = glob.glob('../normalized_spectra/norm/*.fits')
+line_list_file = '/home/c4011027/PhD_stuff/ESO_proposals/prologs/line_list.txt'
 velocity = np.linspace(-100, 100, 200)
-process_timeseries_spectra(spectra_files, line_list_file, velocity)
+process_time_series(spectra_files, line_list_file, velocity)
