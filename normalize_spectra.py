@@ -4,12 +4,12 @@ import matplotlib.pyplot as plt
 import os
 from scipy.interpolate import splrep, splev
 from astropy.io import fits
-
+import pandas as pd
 '''
 v1.5
 03/10/2024
-This code was developed by Michael Abdul-Masih and modified by Sanjay Sekaran, julia.bodensteiner@kuleuven.be @ Instituut voor Sterrenkunde, KU Leuven, Belgium
-modified by Ankur Kalita @ a.j.kalita2@ncl.ac.uk
+This code was developed by Michael Abdul-Masih and modified by Sanjay Sekaran, Julia Bodensteiner @IvS, KU Leuven, Belgium
+modified by Ankur Kalita @ a.j.kalita2@ncl.ac.uk @NCL
 '''
 
 def write_espresso(infile, flux, outfile, wave=None):
@@ -69,7 +69,7 @@ class PointBrowser(object):
         self.upper_bound = bounds[1]
         self.spline_range = np.arange(self.w_min, self.w_max+1, 1)
         self.filepath = filepath
-        self.knot_width = 5.0
+        self.knot_width = 1.5
         self.knot_half_width = self.knot_width/2
         self.flux_knots = []
 
@@ -236,7 +236,7 @@ class PointBrowser(object):
 
 
     def fit_spline(self):
-        tlusty = pd.read_csv('~/PhD_stuff/tlusty_models/BCvispec_v10_normalized/BC30000g300v10CN.vis.17_normalized.csv') # dir to synthetic spectra
+        tlusty = pd.read_csv('~/PhD_stuff/ESO_proposals/tlusty_Omodels/normalized_data/G30000g375v10.vis.17_normalized.csv') # dir to synthetic spectra
         self.tlusty_wave, self.tlusty_flux = tlusty['wave'], tlusty['normalized_flux']
         
         if hasattr(self, 'spline_plot'):
