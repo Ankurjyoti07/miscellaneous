@@ -42,7 +42,7 @@ def update_shift_file(filename, segment_index, new_value):
         f.writelines(lines)
 
 # --- Setup ---
-specdir = glob.glob('/home/c4011027/PhD_stuff/ESO_proposals/normalized_corrected/*.fits')
+specdir = glob.glob('/home/c4011027/PhD_stuff/spectra_ts/results/zeta_oph_results/validation_test/fresh_validation_tests/espresso_norm/*.fits')
 wave, flux = get_mean_flux(specdir)
 
 txt_file = "selected_wavelengths_new.txt"
