@@ -40,7 +40,7 @@ def get_mean_flux_weighted_efficient(glob_specdir):
     return wavelengths, mean_flux
 
 # Load spectrum
-spec_files = glob.glob('/home/c4011027/PhD_stuff/ESO_proposals/normalized_corrected/*.fits')
+spec_files = glob.glob('/home/c4011027/PhD_stuff/spectra_ts/results/zeta_oph_results/validation_test/fresh_validation_tests/espresso_norm/*.fits')
 wavelength, flux = get_mean_flux_weighted_efficient(spec_files)
 
 output_file = "selected_wavelengths_new.txt"
